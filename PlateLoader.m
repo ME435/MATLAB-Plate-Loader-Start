@@ -1,9 +1,6 @@
 classdef PlateLoader < hgsetget
     %PLATELOADER Controls the Beckman Coulter Plate Loader Robot
     %   Performs the basic actions to control the plate loader
-
-    % TODO: If anybody wants to help my comments in this file certainly be
-    % better. :)  Thanks.  Just fix up the Google Doc.
     
     properties
         serialRobot
@@ -22,33 +19,34 @@ classdef PlateLoader < hgsetget
     
     methods
         function obj = PlateLoader(portNumber)
-            % Construct a PlateLoader Object
-            
             % Close any open serial connections
-            open_ports=instrfind('Type','serial','Status','open');
-            if ~isempty(open_ports)
-                 fclose(open_ports);
-            end
+%             clear all;
+
+            fprintf('Connecting to robot...');            
             portStr = sprintf('COM%d',portNumber);
-            obj.serialRobot = serial(portStr,'BaudRate',19200,'Terminator',10,'Timeout',1);
-            response = robotOpenSeq(obj);
+            % For Dr. Fisher's Mac...
+%             portStr = '/dev/tty.usbserial';
+            obj.serialRobot = serialport(portStr, 19200, "Timeout", 15);
+
+            writeline(obj.serialRobot,'INITIALIZE');
+            response = readline(obj.serialRobot);
             % Had to print the response since a construct cannot return mulitple items
             fprintf(response);  
             obj.xAxisPosition = 3;
             obj.isZAxisExtended = false;
             obj.isGripperClosed = true;
             % TODO: When turned on there might be a plate present
-            %   Can someone add code to get Plate status
-            %   Maybe use the GRIPPER_STATUS command and ready string reply
+            %   If you want, you could use the GRIPPER_STATUS command and
+            %   read the string reply to set the plate status if needed.
             obj.isPlatePresent = false;
         end
         function response = reset(obj)
             % Reset robot
-            fprintf(obj.serialRobot,'RESET');
+            writeline(obj.serialRobot,'RESET');
             obj.xAxisPosition = 3;
             obj.isZAxisExtended = false;
             obj.isGripperClosed = true;
-            response = getResponse(obj);
+            response = readline(obj.serialRobot);
         end
         function response = x(obj,pos)
             % Moves the x-axis to position, passes the reply back to caller
@@ -57,17 +55,17 @@ classdef PlateLoader < hgsetget
                 return
             end
             xCommand = sprintf('X-AXIS %d',pos);
-            fprintf(obj.serialRobot,xCommand);
+            writeline(obj.serialRobot,xCommand);
             if(obj.xAxisPosition ~= pos)
                 obj.isZAxisExtended = false;
             end
             obj.xAxisPosition = pos;
-            response = getResponse(obj);
+            response = readline(obj.serialRobot);
         end
         function response = extend(obj)
             % Extends the Z-Axis, passes the reply back to caller
-            fprintf(obj.serialRobot,'Z-AXIS EXTEND');
-            response = getResponse(obj);
+            writeline(obj.serialRobot,'Z-AXIS EXTEND');
+            response = readline(obj.serialRobot);
             if(strcmp(response(1:5),'ERROR'))
                 obj.isZAxisExtended = false;
             else
@@ -76,15 +74,15 @@ classdef PlateLoader < hgsetget
         end
         function response = retract(obj)
             % Retracts the Z-Axis, passes the reply back to caller
-            fprintf(obj.serialRobot,'Z-AXIS RETRACT');
+            writeline(obj.serialRobot,'Z-AXIS RETRACT');
             obj.isZAxisExtended = false;
-            response = getResponse(obj);
+            response = readline(obj.serialRobot);
         end
         function response = close(obj)
             % Close Gripper, passes the reply back to caller
-            fprintf(obj.serialRobot,'GRIPPER CLOSE');
+            writeline(obj.serialRobot,'GRIPPER CLOSE');
             obj.isGripperClosed = true;
-            response = getResponse(obj);
+            response = readline(obj.serialRobot);
             if( strcmp(response(end-8:end-2),'NOPLATE'))
                 obj.isPlatePresent = false;
             else
@@ -93,10 +91,10 @@ classdef PlateLoader < hgsetget
         end
         function response = open(obj)
             % Open Gripper, passes the reply back to caller
-            fprintf(obj.serialRobot,'GRIPPER OPEN');
+            writeline(obj.serialRobot,'GRIPPER OPEN');
             obj.isGripperClosed = false;
             obj.isPlatePresent = false;
-            response = getResponse(obj);
+            response = readline(obj.serialRobot);
         end
         function response = movePlate(obj, startPos, endPos)
             % movePlate(startPos, endPos)- Passes two MATLAB numbers for the
@@ -107,9 +105,9 @@ classdef PlateLoader < hgsetget
                 return
             end
             moveCommand = sprintf('MOVE %d %d',startPos,endPos);
-            fprintf(obj.serialRobot,moveCommand);
+            writeline(obj.serialRobot,moveCommand);
 
-            response = getResponse(obj);
+            response = readline(obj.serialRobot);
             if( strcmp(response(1:5),'ERROR'))
                 obj.xAxisPosition = startPos;
                 obj.isZAxisExtended = false;
@@ -134,8 +132,8 @@ classdef PlateLoader < hgsetget
                 for j = 2:4
                     if(i ~= j)
                         timeCommand = sprintf('SET_DELAY %d %d %d', i,j,timeDelays(i,j));
-                        fprintf(obj.serialRobot,timeCommand);
-                        response = getResponse(obj);
+                        writeline(obj.serialRobot,timeCommand);
+                        response = readline(obj.serialRobot);
                         fprintf(response);
                     end
                 end
@@ -148,8 +146,8 @@ classdef PlateLoader < hgsetget
         function response = getStatus(obj)
             % Since we are keeping the status as instance fields we can just
             % get the properties of the class, this is a useful double check
-            fprintf(obj.serialRobot,'LOADER_STATUS');
-            response = getResponse(obj);
+            writeline(obj.serialRobot,'LOADER_STATUS');
+            response = readline(obj.serialRobot);
             % TODO: Make the values update if different
             %  Can someone make the call to LOADED_STATUS also update
             %  properties, just in case somehow it gets off
@@ -193,27 +191,4 @@ classdef PlateLoader < hgsetget
             fprintf('\n');
         end
     end
-end
-
-function response = robotOpenSeq(obj)
-% Open the serial port for PlateLoader and RESET
-fprintf('Connect to robot...');
-fprintf('Status is %s\n',obj.serialRobot.Status);
-fprintf('Opening...');
-fopen(obj.serialRobot)
-fprintf('Status is %s\n',obj.serialRobot.Status);
-fprintf(obj.serialRobot,'INITIALIZE');
-response = getResponse(obj);
-end
-
-
-
-function response = getResponse(obj)
-% Get the response from the serial robot port
-warning off all
-response = char(fread(obj.serialRobot,1));
-while((isempty(response))||(~strcmp(response(end),char(get(obj.serialRobot,'Terminator')))))
-    response = [response,char(fread(obj.serialRobot,1))];
-end
-warning on all
 end
