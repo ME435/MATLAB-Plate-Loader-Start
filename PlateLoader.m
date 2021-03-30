@@ -19,10 +19,7 @@ classdef PlateLoader < hgsetget
     
     methods
         function obj = PlateLoader(portNumber)
-            % Close any open serial connections
-%             clear all;
-
-            fprintf('Connecting to robot...');            
+            fprintf('Connecting to robot...');
             portStr = sprintf('COM%d',portNumber);
             % For Dr. Fisher's Mac...
 %             portStr = '/dev/tty.usbserial';
@@ -66,7 +63,7 @@ classdef PlateLoader < hgsetget
             % Extends the Z-Axis, passes the reply back to caller
             writeline(obj.serialRobot,'Z-AXIS EXTEND');
             response = readline(obj.serialRobot);
-            if(strcmp(response(1:5),'ERROR'))
+            if(contains(response,'ERROR'))
                 obj.isZAxisExtended = false;
             else
                 obj.isZAxisExtended = true;
@@ -83,8 +80,8 @@ classdef PlateLoader < hgsetget
             writeline(obj.serialRobot,'GRIPPER CLOSE');
             obj.isGripperClosed = true;
             response = readline(obj.serialRobot);
-            if( strcmp(response(end-8:end-2),'NOPLATE'))
-                obj.isPlatePresent = false;
+            if( contains(response,'NOPLATE'))
+                obj.isPlatePresent = false;ER
             else
                 obj.isPlatePresent = true;
             end
@@ -108,7 +105,7 @@ classdef PlateLoader < hgsetget
             writeline(obj.serialRobot,moveCommand);
 
             response = readline(obj.serialRobot);
-            if( strcmp(response(1:5),'ERROR'))
+            if( contains(response,'ERROR'))
                 obj.xAxisPosition = startPos;
                 obj.isZAxisExtended = false;
                 obj.isGripperClosed = false;
@@ -153,10 +150,6 @@ classdef PlateLoader < hgsetget
             %  properties, just in case somehow it gets off
         end
         
-        % Other to todo's if someone wants to.  Implement the additional
-        %  weird commands: STOP_CYLINDER, VERSION, 
-        %  X-AXIS_STATUS, Z-AXIS_STATUS, GRIPPER_STATUS
-        
         function [xPos,zAxis,grip,plate] = getProperties(obj)
             % Returns the status properties of the robot (for GUI display)
             xPos = obj.xAxisPosition;
@@ -170,9 +163,6 @@ classdef PlateLoader < hgsetget
             response = 'Disconnected';
         end
         function disp(obj)
-            % Overrides the display when seeing robot status
-            % Note: if you need to see the field names use
-            %    get(_objectName_)
             fprintf('  X-AXIS %d, ',obj.xAxisPosition);
             if (obj.isZAxisExtended)
                 fprintf('EXTENDED, ');
