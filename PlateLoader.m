@@ -81,7 +81,7 @@ classdef PlateLoader < hgsetget
             obj.isGripperClosed = true;
             response = readline(obj.serialRobot);
             if( contains(response,'NOPLATE'))
-                obj.isPlatePresent = false;ER
+                obj.isPlatePresent = false;
             else
                 obj.isPlatePresent = true;
             end
@@ -156,11 +156,6 @@ classdef PlateLoader < hgsetget
             zAxis = obj.isZAxisExtended;
             grip = obj.isGripperClosed;
             plate = obj.isPlatePresent;
-        end
-        function response = shutdown(obj)
-            % Close serial object
-            fclose(obj.serialRobot);
-            response = 'Disconnected';
         end
         function disp(obj)
             fprintf('  X-AXIS %d, ',obj.xAxisPosition);

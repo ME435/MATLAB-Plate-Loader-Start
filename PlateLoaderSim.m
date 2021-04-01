@@ -149,11 +149,6 @@ classdef PlateLoaderSim < hgsetget
             grip = obj.isGripperClosed;
             plate = obj.isPlatePresent;
         end
-        function response = shutdown(obj)
-            % Close serial object
-            response = 'Disconnected';
-            % Could delete obj but no real need
-        end
         function disp(obj)
             % Overrides the display when seeing robot status
             % Note: if you need to see the field names use:
