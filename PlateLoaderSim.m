@@ -39,7 +39,7 @@ classdef PlateLoaderSim < hgsetget
         function response = x(obj,pos)
             % Moves the x-axis to position, passes the reply back to caller
             if (pos <1 || pos>5)
-                fprintf('Illegal position');
+                fprintf('Illegal position\n');
                 return
             end
             xCommand = sprintf('X-AXIS %d\n',pos);
@@ -86,7 +86,7 @@ classdef PlateLoaderSim < hgsetget
             % start and end position of the plate, tries to move the plate to
             % that position, and passes the reply back to caller
             if (startPos <1 || startPos>5 || endPos <1 || endPos>5)
-                fprintf('Illegal position');
+                fprintf('Illegal position\n');
                 return
             end
             moveCommand = sprintf('MOVE %d %d\n',startPos,endPos);
@@ -148,6 +148,12 @@ classdef PlateLoaderSim < hgsetget
             zAxis = obj.isZAxisExtended;
             grip = obj.isGripperClosed;
             plate = obj.isPlatePresent;
+        end
+        function response = shutdown(obj)
+            % No serial object to close in the simulator, just match the
+            % PlateLoader interface so student code works with either class.
+            fprintf('Disconnected\n'); %send to robot (console)
+            response = 'Disconnected';
         end
         function disp(obj)
             % Overrides the display when seeing robot status
